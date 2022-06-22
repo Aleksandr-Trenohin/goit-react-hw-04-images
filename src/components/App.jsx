@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 
 import { AppContainer, AppTitle } from './App.styled';
 
@@ -9,139 +9,99 @@ import Button from './Button/Button';
 import Loader from './Loader/Loader';
 import { getImages } from '../services/Api';
 
-export class App extends Component {
-  state = {
-    images: [],
-    title: '',
+export const App = () => {
+  const [images, setImages] = useState([]);
+  const [title, setTitle] = useState('');
 
-    activePage: 0,
-    totalHits: 0,
+  const [activePage, setActivePage] = useState(0);
+  const [totalHits, setTotalHits] = useState(0);
 
-    status: 'idle',
+  const [status, setStatus] = useState('idle');
 
-    isModalOpen: false,
-    modalItem: null,
-  };
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalItem, setModalItem] = useState(null);
 
-  async componentDidUpdate(prevProps, prevState) {
-    const { activePage, title } = this.state;
+  useEffect(() => {
+    if (title !== '') {
+      setStatus('pending');
 
-    const prevPage = prevState.activePage;
-    const prevTitle = prevState.title;
-    const newTitle = title;
+      setImages([]);
+      setActivePage(1);
 
-    if (prevTitle !== newTitle && newTitle !== '') {
-      this.setState({
-        status: 'pending',
-
-        images: [],
-        activePage: 1,
-      });
-      this.fetchImages();
+      fetchImages();
     }
+  }, [title]);
 
-    if (activePage !== prevPage && activePage !== 1) {
-      this.setState({
-        status: 'pending',
-      });
-      this.fetchImages();
+  useEffect(() => {
+    if (activePage !== 0) {
+      setStatus('pending');
+      fetchImages();
     }
-  }
+  }, [activePage]);
 
-  fetchImages = async () => {
-    const { title, activePage } = this.state;
-
+  const fetchImages = async () => {
     try {
       const { hits, totalHits } = await getImages(title, activePage);
 
       if (hits.length === 0) {
-        this.setState({
-          status: 'idle',
-        });
+        setStatus('idle');
       }
 
-      this.setState(prevState => ({
-        images: [...prevState.images, ...hits],
-        status: 'resolved',
-
-        totalHits,
-      }));
+      setImages([...images, ...hits]);
+      setStatus('resolved');
+      setTotalHits(totalHits);
     } catch (error) {
-      this.setState({
-        status: 'rejected',
-      });
+      setStatus('rejected');
     } finally {
     }
   };
 
-  imageTitle = title => {
-    if (this.state.title !== title) {
-      this.setState({
-        title: title,
-        activePage: 1,
-      });
+  const imageTitle = newTitle => {
+    if (title !== newTitle) {
+      setImages([]);
+      setTitle(newTitle);
+      setActivePage(1);
     }
   };
 
-  nextPage = () => {
-    this.setState(prevState => ({
-      activePage: prevState.activePage + 1,
-    }));
+  const nextPage = () => {
+    setActivePage(activePage + 1);
   };
 
-  showModalWindow = id => {
-    const { images } = this.state;
+  const showModalWindow = id => {
     const currentItem = images.find(item => item.id === id);
 
-    this.setState({ modalItem: currentItem });
+    setModalItem(currentItem);
 
-    this.toggleModal();
+    toggleModal();
   };
 
-  toggleModal = () => {
-    this.setState(({ isModalOpen }) => ({
-      isModalOpen: !isModalOpen,
-    }));
+  const toggleModal = () => {
+    setIsModalOpen(!isModalOpen);
   };
 
-  render() {
-    const {
-      images,
-      title,
+  return (
+    <AppContainer>
+      <Searhbar onSubmit={imageTitle} />
+      {status === 'rejected' && (
+        <AppTitle>Oop! Something went wrong! Try again later!</AppTitle>
+      )}
 
-      status,
+      <ImageGallery images={images} onOpenModal={showModalWindow} />
+      {status === 'idle' && (
+        <AppTitle>Welcome to the world of images!</AppTitle>
+      )}
 
-      totalHits,
-      activePage,
+      {status === 'pending' && <Loader />}
+      {status === 'resolved' && images.length === 0 && (
+        <AppTitle>Such '{title}' not found!</AppTitle>
+      )}
 
-      isModalOpen,
-      modalItem,
-    } = this.state;
-    const { imageTitle, nextPage, toggleModal, showModalWindow } = this;
+      {status === 'resolved' && totalHits > activePage * 12 && (
+        <Button nextPage={nextPage} />
+      )}
 
-    return (
-      <AppContainer>
-        <Searhbar onSubmit={imageTitle} />
-        {status === 'rejected' && (
-          <AppTitle>Oop! Something went wrong! Try again later!</AppTitle>
-        )}
-
-        <ImageGallery images={images} onOpenModal={showModalWindow} />
-        {status === 'idle' && (
-          <AppTitle>Welcome to the world of images!</AppTitle>
-        )}
-
-        {status === 'pending' && <Loader />}
-        {status === 'resolved' && images.length === 0 && (
-          <AppTitle>Such '{title}' not found!</AppTitle>
-        )}
-
-        {status === 'resolved' && totalHits > activePage * 12 && (
-          <Button nextPage={nextPage} />
-        )}
-
-        {isModalOpen && <Modal onOpen={modalItem} onClose={toggleModal} />}
-      </AppContainer>
-    );
-  }
-}
+      {isModalOpen && <Modal onOpen={modalItem} onClose={toggleModal} />}
+    </AppContainer>
+  );
+};
