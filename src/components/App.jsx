@@ -30,6 +30,7 @@ export const App = () => {
 
       fetchImages();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title]);
 
   useEffect(() => {
@@ -37,6 +38,7 @@ export const App = () => {
       setStatus('pending');
       fetchImages();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activePage]);
 
   const fetchImages = async () => {

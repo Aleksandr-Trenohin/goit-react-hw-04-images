@@ -13,7 +13,7 @@ export const Modal = ({ onClose, onOpen }) => {
     return () => {
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, []);
+  });
 
   const onKeyDown = evt => {
     if (evt.code === 'Escape') {
