@@ -27,8 +27,6 @@ export const App = () => {
 
       setImages([]);
       setActivePage(1);
-
-      fetchImages();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title]);
